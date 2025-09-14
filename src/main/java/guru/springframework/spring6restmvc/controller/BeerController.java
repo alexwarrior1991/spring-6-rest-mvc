@@ -2,7 +2,9 @@ package guru.springframework.spring6restmvc.controller;
 
 import guru.springframework.spring6restmvc.model.BeerDTO;
 import guru.springframework.spring6restmvc.model.BeerStyle;
+import guru.springframework.spring6restmvc.services.BeerAsyncService;
 import guru.springframework.spring6restmvc.services.BeerService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -12,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Created by jt, Spring Framework Guru.
@@ -26,6 +30,8 @@ public class BeerController {
     public static final String BEER_PATH_ID = BEER_PATH + "/{beerId}";
 
     private final BeerService beerService;
+
+    private final BeerAsyncService asyncService;
 
     @PatchMapping(BEER_PATH_ID)
     public ResponseEntity updateBeerPatchById(@PathVariable("beerId") UUID beerId, @RequestBody BeerDTO beer) {
@@ -83,5 +89,20 @@ public class BeerController {
 
         return beerService.getBeerById(beerId).orElseThrow(NotFoundException::new);
     }
+
+    @GetMapping(value = BEER_PATH + "/async")
+    public CompletableFuture<Page<BeerDTO>> listBeersAsync(@RequestParam(required = false) String name,
+                                                           @RequestParam(required = false) BeerStyle style,
+                                                           @RequestParam(defaultValue = "true") boolean showInventory,
+                                                           @RequestParam(defaultValue = "1") int page,
+                                                           @RequestParam(defaultValue = "25") int size) {
+        return asyncService.listBeersAsync(name, style, showInventory, page, size);
+    }
+
+    @PostMapping(BeerController.BEER_PATH + "/bulk/async-optimized")
+    public CompletableFuture<List<BeerDTO>> createBeersBulkOptimizedAsync(@RequestBody List<@Valid BeerDTO> beers) {
+        return asyncService.saveAllBulkAsync(beers);
+    }
+
 
 }
